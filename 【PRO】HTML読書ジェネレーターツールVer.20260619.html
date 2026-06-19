@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>うさうさ読書手帖 ｜ 読書週間 応援ジェネレーター</title>
+<style>
+  :root{
+    --paper:#f3ead6;          /* 生成り */
+    --paper-deep:#ece0c6;
+    --washi:#fbf6ea;          /* 障子・吹き出し */
+    --ink:#463c30;            /* 墨 */
+    --ink-soft:#6f6453;
+    --wood:#9c7650;           /* 木 */
+    --wood-dark:#7a5839;
+    --sakura:#e3a0a8;         /* 桜 */
+    --sakura-soft:#f2cdd1;
+    --matcha:#8a9a5b;         /* 抹茶 */
+    --vermilion:#c4553c;      /* 朱（行灯・落款）*/
+    --gold:#c6985a;           /* 金茶 */
+    --line:#d8c8a6;
+    --shadow:rgba(95,72,45,.16);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Sans","Yu Gothic Medium","YuGothic","Noto Sans JP",sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(120% 90% at 50% -10%, #fbf4e3 0%, var(--paper) 48%, var(--paper-deep) 100%);
+    min-height:100vh;
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .mincho{font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;}
+
+  /* ===== 桜の花びら（背景アンビエント）===== */
+  .petals{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+  .petal{
+    position:absolute;top:-24px;width:14px;height:14px;opacity:.0;
+    background:radial-gradient(circle at 35% 30%, #f6d7da 0%, var(--sakura) 75%);
+    border-radius:14px 1px 14px 1px;
+    animation:fall linear infinite;
+  }
+  @keyframes fall{
+    0%{transform:translateY(-30px) rotate(0deg);opacity:0;}
+    10%{opacity:.85;}
+    90%{opacity:.7;}
+    100%{transform:translateY(105vh) translateX(60px) rotate(420deg);opacity:0;}
+  }
+
+  .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:26px 18px 70px;}
+
+  /* ===== ヘッダー ===== */
+  .head{
+    display:flex;align-items:center;gap:16px;
+    padding:18px 20px;border-radius:18px;
+    background:linear-gradient(135deg,#fbf6ea,#f1e6cd);
+    border:1px solid var(--line);
+    box-shadow:0 8px 24px var(--shadow);
+    position:relative;overflow:hidden;
+  }
+  .head::after{ /* 木目の縁取り上辺 */
+    content:"";position:absolute;left:0;right:0;top:0;height:5px;
+    background:linear-gradient(90deg,var(--vermilion),var(--gold),var(--sakura),var(--matcha));
+    opacity:.55;
+  }
+  /* 行灯（あんどん）*/
+  .andon{flex:0 0 auto;width:54px;height:74px;position:relative;}
+  .andon .frame{
+    position:absolute;inset:0;border:3px solid var(--wood-dark);border-radius:6px;
+    background:linear-gradient(180deg,#fff6da,#ffe9b0);
+    box-shadow:0 0 18px rgba(230,180,90,.7);
+    animation:flicker 3.4s ease-in-out infinite;
+  }
+  .andon .bar{position:absolute;left:0;right:0;height:3px;background:var(--wood-dark);}
+  .andon .bar.b1{top:33%;} .andon .bar.b2{top:66%;}
+  .andon .mon{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    color:var(--vermilion);font-size:15px;}
+  .andon .base{position:absolute;left:-5px;right:-5px;bottom:-7px;height:8px;
+    background:var(--wood-dark);border-radius:3px;}
+  @keyframes flicker{0%,100%{box-shadow:0 0 16px rgba(230,180,90,.55);}50%{box-shadow:0 0 26px rgba(245,200,110,.95);}}
+
+  .head .titlebox{flex:1 1 auto;min-width:0;}
+  .head h1{margin:0;font-size:1.42rem;letter-spacing:.06em;color:var(--ink);}
+  .head .sub{margin:2px 0 0;font-size:.74rem;letter-spacing:.18em;color:var(--ink-soft);}
+  .head .brand{margin-top:5px;font-size:.66rem;color:var(--vermilion);letter-spacing:.1em;}
+
+  .rank-chip{
+    flex:0 0 auto;text-align:center;padding:8px 12px;border-radius:12px;
+    background:var(--washi);border:1px dashed var(--gold);min-width:96px;
+  }
+  .rank-chip .lbl{font-size:.6rem;color:var(--ink-soft);letter-spacing:.12em;}
+  .rank-chip .val{font-size:.92rem;color:var(--vermilion);font-weight:700;margin-top:2px;}
+  .rank-chip .streak{font-size:.66rem;color:var(--matcha);margin-top:3px;}
+
+  /* ===== うさうさ + 吹き出し ===== */
+  .stage{
+    margin-top:18px;display:flex;align-items:flex-end;gap:6px;
+    padding:22px 20px 18px;border-radius:18px;
+    background:
+      linear-gradient(180deg,#fcf8ee 0%, #f5ead2 100%);
+    border:1px solid var(--line);
+    box-shadow:0 10px 28px var(--shadow);
+    position:relative;
+  }
+  .usa{flex:0 0 auto;width:150px;animation:bob 5s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+  .bubble{
+    flex:1 1 auto;position:relative;background:var(--washi);
+    border:1.5px solid var(--sakura-soft);border-radius:18px;
+    padding:18px 20px;margin-bottom:18px;box-shadow:0 4px 14px var(--shadow);
+  }
+  .bubble::after{
+    content:"";position:absolute;left:-13px;bottom:22px;
+    border:8px solid transparent;border-right-color:var(--washi);
+    filter:drop-shadow(-2px 0 0 var(--sakura-soft));
+  }
+  .bubble .line{height:1px;background:repeating-linear-gradient(90deg,var(--sakura) 0 7px,transparent 7px 13px);margin:9px 0;}
+  #cheerText{font-size:1.06rem;line-height:1.8;color:var(--ink);min-height:3.2em;}
+  #cheerText .accent{color:var(--vermilion);font-weight:700;}
+  .stage .reroll{
+    position:absolute;right:18px;bottom:14px;
+    background:var(--vermilion);color:#fff;border:none;border-radius:20px;
+    padding:7px 16px;font-size:.78rem;cursor:pointer;letter-spacing:.08em;
+    box-shadow:0 3px 8px rgba(150,60,40,.35);transition:transform .12s,filter .12s;
+  }
+  .stage .reroll:hover{filter:brightness(1.06);transform:translateY(-1px);}
+  .stage .reroll:active{transform:translateY(0);}
+
+  /* ===== 読書週間 桜の枝 ===== */
+  .card{
+    margin-top:18px;padding:20px;border-radius:18px;background:var(--washi);
+    border:1px solid var(--line);box-shadow:0 8px 22px var(--shadow);
+  }
+  .card h2{
+    margin:0 0 4px;font-size:1.04rem;letter-spacing:.08em;
+    display:flex;align-items:center;gap:9px;color:var(--ink);
+  }
+  .card h2 .seal{
+    display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;
+    background:var(--vermilion);color:#fff;font-size:.8rem;flex:0 0 auto;
+    box-shadow:0 2px 5px rgba(150,60,40,.3);
+  }
+  .card .desc{margin:0 0 14px;font-size:.78rem;color:var(--ink-soft);}
+
+  .week{display:flex;justify-content:space-between;gap:6px;}
+  .day{flex:1 1 0;text-align:center;}
+  .day .blossom{
+    width:100%;aspect-ratio:1;display:grid;place-items:center;
+    border-radius:14px;background:#f6efde;border:1px dashed var(--line);
+    font-size:1.5rem;cursor:pointer;transition:transform .15s,background .25s;
+    line-height:1;
+  }
+  .day .blossom:hover{transform:scale(1.06);}
+  .day.done .blossom{background:linear-gradient(180deg,#fde6e9,#f6cdd3);border-color:var(--sakura);}
+  .day.today .blossom{box-shadow:0 0 0 2px var(--gold) inset;}
+  /* リセット後：つぼみを消した「閉じた」状態 */
+  .day.closed .blossom{background:#f1ead7;border-style:dashed;border-color:var(--line);opacity:.55;position:relative;}
+  .day.closed .blossom::after{content:"·";color:var(--ink-soft);opacity:.55;font-size:1.5rem;line-height:1;}
+  .day.closed .blossom:hover{opacity:.85;}
+  .day .lbl{font-size:.62rem;color:var(--ink-soft);margin-top:5px;letter-spacing:.04em;}
+  .week-note{margin-top:12px;font-size:.74rem;color:var(--matcha);text-align:center;}
+
+  /* ===== 今日の読書 ===== */
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:.74rem;color:var(--ink-soft);margin-bottom:5px;letter-spacing:.06em;}
+  .input,.textarea,.select{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+    background:#fffdf7;color:var(--ink);font-size:.92rem;font-family:inherit;
+  }
+  .textarea{resize:vertical;min-height:64px;line-height:1.7;}
+  .input:focus,.textarea:focus,.select:focus{outline:2px solid var(--gold);outline-offset:1px;border-color:var(--gold);}
+  .row2{display:flex;gap:10px;}
+  .row2 .field{flex:1;}
+
+  .btn{
+    appearance:none;border:none;cursor:pointer;font-family:inherit;
+    border-radius:24px;padding:11px 22px;font-size:.9rem;letter-spacing:.06em;
+    background:var(--matcha);color:#fff;box-shadow:0 4px 10px rgba(110,125,70,.3);
+    transition:transform .12s,filter .12s;
+  }
+  .btn:hover{filter:brightness(1.05);transform:translateY(-1px);}
+  .btn:active{transform:translateY(0);}
+  .btn.wood{background:var(--wood);box-shadow:0 4px 10px rgba(120,88,57,.3);}
+  .btn.sakura{background:var(--sakura);color:#5a2d33;box-shadow:0 4px 10px rgba(200,130,140,.3);}
+  .btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);box-shadow:none;}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+  /* 朝の一服 */
+  .morning-state{font-size:.82rem;color:var(--ink-soft);}
+  .morning-word{
+    margin-top:12px;padding:14px 16px;border-radius:12px;display:none;
+    background:linear-gradient(135deg,#fff5e0,#fbe9c6);border:1px solid var(--gold);
+  }
+  .morning-word.show{display:block;animation:rise .5s ease;}
+  @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .morning-word .k{font-size:.66rem;color:var(--vermilion);letter-spacing:.16em;}
+  .morning-word .t{font-size:1rem;margin-top:4px;color:var(--ink);}
+
+  /* ===== 学びの手帖（四段階）===== */
+  .four-hint{
+    font-size:.7rem;color:var(--matcha);background:#f3f1e2;border:1px dashed var(--matcha);
+    border-radius:8px;padding:8px 10px;margin-bottom:12px;
+  }
+  .notes{margin-top:16px;display:flex;flex-direction:column;gap:12px;}
+  .note{
+    border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px;
+    background:#fffdf7;position:relative;
+  }
+  .note::before{
+    content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:4px;
+    background:linear-gradient(180deg,var(--sakura),var(--gold));
+  }
+  .note .ttl{font-weight:700;margin:0 0 6px;padding-left:10px;color:var(--wood-dark);}
+  .note dl{margin:0;padding-left:10px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:.84rem;}
+  .note dt{color:var(--vermilion);white-space:nowrap;}
+  .note dd{margin:0;color:var(--ink);}
+  .note .meta{font-size:.62rem;color:var(--ink-soft);margin-top:8px;padding-left:10px;}
+  .note .del{position:absolute;right:10px;top:10px;border:none;background:none;cursor:pointer;
+    color:var(--ink-soft);font-size:.72rem;}
+  .note .del:hover{color:var(--vermilion);}
+  .empty{font-size:.8rem;color:var(--ink-soft);text-align:center;padding:14px;}
+
+  /* ===== 手帖の選択削除（☑） ===== */
+  .note-tools{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;
+    padding:9px 12px;border-radius:12px;background:#f6efde;border:1px dashed var(--line);
+  }
+  .note-tools .pick-all{display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--ink-soft);cursor:pointer;}
+  .note-tools .pick-all input{width:16px;height:16px;accent-color:var(--vermilion);cursor:pointer;}
+  .note-tools .pick-count{font-size:.74rem;color:var(--matcha);margin-right:auto;}
+  .btn.danger{background:var(--vermilion);color:#fff;box-shadow:0 4px 10px rgba(150,60,40,.3);padding:8px 16px;font-size:.82rem;}
+  .btn.danger:disabled{background:var(--line);color:var(--ink-soft);box-shadow:none;cursor:not-allowed;transform:none;filter:none;}
+  .note .pick{
+    position:absolute;left:9px;top:12px;width:18px;height:18px;margin:0;
+    accent-color:var(--vermilion);cursor:pointer;z-index:2;
+  }
+  .note.has-pick{padding-left:34px;}
+  .note.has-pick::before{left:30px;}
+  .note.has-pick .ttl,.note.has-pick dl,.note.has-pick .meta{padding-left:0;}
+  .note.sel{background:#fdf2e6;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset;}
+
+  /* ===== 和菓子棚 ===== */
+  .tray{
+    margin-top:6px;background:linear-gradient(180deg,#b98a5c,#8a6240);
+    border-radius:14px;padding:14px;box-shadow:inset 0 3px 8px rgba(60,40,20,.4);
+  }
+  .tray .grid{
+    display:grid;grid-template-columns:repeat(8,1fr);gap:8px;
+    background:#fbf6ea;border-radius:8px;padding:12px;min-height:70px;
+  }
+  .wagashi{width:100%;aspect-ratio:1;display:grid;place-items:center;font-size:1.35rem;
+    border-radius:50%;background:#f1e6cd;transition:transform .2s;}
+  .wagashi.filled{background:linear-gradient(180deg,#fff3df,#f6e2c0);box-shadow:0 2px 5px var(--shadow);}
+  .wagashi.pop{animation:pop .4s ease;}
+  @keyframes pop{0%{transform:scale(.2);}60%{transform:scale(1.2);}100%{transform:scale(1);}}
+  .tray .count{color:#fbf6ea;font-size:.74rem;margin-top:9px;text-align:center;letter-spacing:.06em;}
+
+  /* トースト */
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--wood-dark);color:#fff5e0;padding:11px 20px;border-radius:24px;
+    font-size:.84rem;box-shadow:0 6px 18px rgba(60,40,20,.4);opacity:0;
+    transition:opacity .3s,transform .3s;z-index:20;pointer-events:none;letter-spacing:.05em;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* 和カフェモード */
+  body.cafe{
+    background:radial-gradient(120% 90% at 50% -10%, #f3e3c8 0%, #e9d4ad 55%, #ddc294 100%);
+  }
+  body.cafe .head,body.cafe .stage,body.cafe .card{filter:saturate(1.04) brightness(1.01);}
+  .cafe-toggle{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--ink-soft);}
+  .switch{position:relative;width:46px;height:24px;flex:0 0 auto;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:var(--line);border-radius:24px;cursor:pointer;transition:.25s;}
+  .slider::before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;
+    background:#fff;border-radius:50%;transition:.25s;}
+  .switch input:checked + .slider{background:var(--vermilion);}
+  .switch input:checked + .slider::before{transform:translateX(22px);}
+
+  .steam{display:none;}
+  body.cafe .steam{display:block;position:absolute;right:26px;top:14px;width:18px;height:30px;pointer-events:none;}
+  body.cafe .steam span{position:absolute;bottom:0;width:4px;height:18px;background:linear-gradient(180deg,rgba(255,255,255,.7),transparent);
+    border-radius:4px;filter:blur(1px);animation:steam 2.6s ease-in-out infinite;}
+  body.cafe .steam span:nth-child(2){left:7px;animation-delay:.8s;}
+  body.cafe .steam span:nth-child(3){left:13px;animation-delay:1.4s;}
+  @keyframes steam{0%{opacity:0;transform:translateY(4px) scaleY(.7);}40%{opacity:.8;}100%{opacity:0;transform:translateY(-16px) scaleY(1.2);}}
+
+  .foot{text-align:center;margin-top:30px;font-size:.7rem;color:var(--ink-soft);letter-spacing:.1em;}
+  .foot .seal-mark{display:inline-block;margin-top:8px;padding:6px 10px;border:1.5px solid var(--vermilion);
+    color:var(--vermilion);border-radius:8px;font-size:.66rem;}
+
+  @media (max-width:560px){
+    .head{flex-wrap:wrap;}
+    .rank-chip{order:3;width:100%;}
+    .usa{width:112px;}
+    #cheerText{font-size:.96rem;}
+    .tray .grid{grid-template-columns:repeat(6,1fr);}
+  }
+  /* ===== ツールバー（一時保存・MD出力）===== */
+  .toolbar{
+    display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;
+    padding-top:12px;border-top:1px dashed var(--line);
+  }
+  .tool-btn{
+    appearance:none;border:none;cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;gap:6px;
+    border-radius:20px;padding:8px 16px;font-size:.8rem;letter-spacing:.04em;
+    transition:transform .12s,filter .12s,opacity .2s;
+    white-space:nowrap;
+  }
+  .tool-btn:hover:not([disabled]){filter:brightness(1.06);transform:translateY(-1px);}
+  .tool-btn:active:not([disabled]){transform:translateY(0);}
+  .tool-btn[disabled]{opacity:.44;cursor:not-allowed;}
+  .tool-btn .tool-icon{font-size:1rem;line-height:1;}
+  .tool-btn.save{background:var(--gold);color:#fff;box-shadow:0 3px 8px rgba(160,120,60,.3);}
+  .tool-btn.load{background:var(--matcha);color:#fff;box-shadow:0 3px 8px rgba(110,130,60,.3);}
+  .tool-btn.md{background:var(--wood-dark);color:#fff5e0;box-shadow:0 3px 8px rgba(80,55,30,.3);}
+  .draft-status{font-size:.68rem;color:var(--ink-soft);margin-top:6px;letter-spacing:.06em;min-height:1.2em;}
+
+  /* 書きかけ入力の自動保存ステータス */
+  .input-draft-status{
+    font-size:.7rem;color:var(--matcha);margin-top:10px;letter-spacing:.04em;
+    padding:7px 10px;border-radius:8px;background:#f1f4e7;border:1px dashed var(--matcha);
+  }
+
+  /* ツールバー：ログボタン */
+  .tool-btn.log{background:var(--ink-soft);color:#fff5e0;box-shadow:0 3px 8px rgba(80,70,55,.3);}
+
+  /* ===== エラーログ ===== */
+  .errlog{display:none;}
+  .errlog.show{display:block;}
+  .errlog h2 .seal.log{background:var(--wood-dark);}
+  .errlog .errlog-count{font-size:.7rem;color:var(--vermilion);margin-left:8px;font-weight:400;letter-spacing:.04em;}
+  .errlog-body{
+    margin-top:6px;max-height:260px;overflow:auto;
+    border:1px solid var(--line);border-radius:10px;background:#fffaf0;
+  }
+  .errlog-row{
+    display:grid;grid-template-columns:auto auto 1fr;gap:8px;
+    padding:7px 10px;border-bottom:1px dashed var(--line);font-size:.72rem;align-items:start;
+  }
+  .errlog-row:last-child{border-bottom:none;}
+  .errlog-row.lv-error{background:#fdf1ec;}
+  .errlog-row.lv-warn{background:#fdf8e9;}
+  .errlog-time{color:var(--ink-soft);white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .errlog-ctx{color:var(--vermilion);white-space:nowrap;font-weight:700;}
+  .errlog-msg{color:var(--ink);white-space:pre-wrap;word-break:break-word;line-height:1.5;}
+  .errlog-empty{padding:14px;font-size:.78rem;color:var(--ink-soft);text-align:center;}
+
+</style>
+</head>
+<body>
+<div class="petals" id="petals" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <!-- ヘッダー -->
+  <header class="head">
+    <div class="steam"><span></span><span></span><span></span></div>
+    <div class="andon" aria-hidden="true">
+      <div class="frame"></div>
+      <div class="bar b1"></div><div class="bar b2"></div>
+      <div class="mon">❀</div><div class="base"></div>
+    </div>
+    <div class="titlebox">
+      <h1 class="mincho">うさうさ読書手帖</h1>
+      <p class="sub">読書週間 応援ジェネレーター</p>
+      <p class="brand">うさうさ研修工房 🐰</p>
+    </div>
+    <div class="rank-chip">
+      <div class="lbl">称号</div>
+      <div class="val" id="rankVal">読みはじめ</div>
+      <div class="streak" id="streakVal">継続 0日</div>
+    </div>
+  </header>
+
+  <!-- うさうさ＆吹き出し -->
+  <section class="stage" aria-label="うさうさからの応援">
+    <svg class="usa" viewBox="0 0 200 230" role="img" aria-label="読書するうさうさ">
+      <defs>
+        <!-- もこもこテクスチャ用フィルター -->
+        <filter id="fluffy" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <!-- 座布団グラデ -->
+        <radialGradient id="shadowGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#d4a0b0" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#d4a0b0" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- 影 -->
+      <ellipse cx="102" cy="218" rx="58" ry="10" fill="url(#shadowGrad)"/>
+
+      <!-- ===== 耳（もこもこ丸耳）===== -->
+      <!-- 左耳 外 -->
+      <ellipse cx="74" cy="52" rx="22" ry="32" fill="#f0ece4" filter="url(#fluffy)"/>
+      <!-- 左耳 内（ピンク）-->
+      <ellipse cx="74" cy="55" rx="11" ry="20" fill="#f2c8ce" opacity="0.85"/>
+      <!-- 右耳 外 -->
+      <ellipse cx="130" cy="52" rx="22" ry="32" fill="#f0ece4" filter="url(#fluffy)"/>
+      <!-- 右耳 内 -->
+      <ellipse cx="130" cy="55" rx="11" ry="20" fill="#f2c8ce" opacity="0.85"/>
+
+      <!-- ===== 体（でかふわ）===== -->
+      <ellipse cx="102" cy="168" rx="62" ry="58" fill="#f5f2eb" filter="url(#fluffy)"/>
+      <!-- 胸もこ -->
+      <ellipse cx="102" cy="148" rx="38" ry="28" fill="#fdfcf8" filter="url(#fluffy)" opacity="0.9"/>
+
+      <!-- ===== 頭 ===== -->
+      <ellipse cx="102" cy="95" rx="50" ry="48" fill="#f5f2eb" filter="url(#fluffy)"/>
+      <!-- 頭もこ上 -->
+      <ellipse cx="102" cy="78" rx="42" ry="22" fill="#fdfcf8" filter="url(#fluffy)" opacity="0.7"/>
+      <!-- 頭もこ左 -->
+      <ellipse cx="68" cy="95" rx="18" ry="16" fill="#fdfcf8" filter="url(#fluffy)" opacity="0.6"/>
+      <!-- 頭もこ右 -->
+      <ellipse cx="136" cy="95" rx="18" ry="16" fill="#fdfcf8" filter="url(#fluffy)" opacity="0.6"/>
+
+      <!-- ===== 顔パーツ ===== -->
+      <!-- ほっぺ（大きめピンク） -->
+      <ellipse cx="80" cy="107" rx="12" ry="9" fill="#f2b8c0" opacity="0.7"/>
+      <ellipse cx="124" cy="107" rx="12" ry="9" fill="#f2b8c0" opacity="0.7"/>
+      <!-- 目（黒まん丸） -->
+      <circle cx="88" cy="97" r="7" fill="#1a1410"/>
+      <circle cx="116" cy="97" r="7" fill="#1a1410"/>
+      <!-- 目ハイライト -->
+      <circle cx="91" cy="94" r="2.5" fill="#fff"/>
+      <circle cx="119" cy="94" r="2.5" fill="#fff"/>
+      <!-- 鼻（小さいピンク三角） -->
+      <path d="M102 109 l-4 5 h8 z" fill="#e8909a"/>
+      <!-- 口 -->
+      <path d="M102 114 q-4 3 -7 2 M102 114 q4 3 7 2" fill="none" stroke="#c07080" stroke-width="1.5" stroke-linecap="round"/>
+
+      <!-- ===== 腕（本を持つ）===== -->
+      <!-- 左腕 -->
+      <ellipse cx="60" cy="170" rx="18" ry="13" fill="#f0ece4" filter="url(#fluffy)" transform="rotate(-20,60,170)"/>
+      <!-- 右腕 -->
+      <ellipse cx="144" cy="170" rx="18" ry="13" fill="#f0ece4" filter="url(#fluffy)" transform="rotate(20,144,170)"/>
+
+      <!-- ===== 本（両手で持つ）===== -->
+      <g transform="translate(0, 4)">
+        <!-- 本の表紙（ローズ） -->
+        <rect x="68" y="182" width="70" height="48" rx="4" fill="#c4553c"/>
+        <!-- 背表紙ライン -->
+        <rect x="68" y="182" width="8" height="48" rx="3" fill="#a03828"/>
+        <!-- 見開き右ページ -->
+        <rect x="76" y="184" width="60" height="44" rx="2" fill="#fbf6ea"/>
+        <!-- ページの行 -->
+        <line x1="82" y1="194" x2="130" y2="194" stroke="#d8c8a6" stroke-width="1.4"/>
+        <line x1="82" y1="200" x2="130" y2="200" stroke="#d8c8a6" stroke-width="1.4"/>
+        <line x1="82" y1="206" x2="130" y2="206" stroke="#d8c8a6" stroke-width="1.4"/>
+        <line x1="82" y1="212" x2="118" y2="212" stroke="#d8c8a6" stroke-width="1.4"/>
+        <!-- 中央のとじ目 -->
+        <line x1="102" y1="184" x2="102" y2="228" stroke="#c8b896" stroke-width="1.2"/>
+        <!-- 左ページ -->
+        <rect x="68" y="184" width="34" height="44" rx="0" fill="#f5eedc" opacity="0.7"/>
+        <line x1="72" y1="194" x2="98" y2="194" stroke="#d8c8a6" stroke-width="1.2"/>
+        <line x1="72" y1="200" x2="98" y2="200" stroke="#d8c8a6" stroke-width="1.2"/>
+        <line x1="72" y1="206" x2="98" y2="206" stroke="#d8c8a6" stroke-width="1.2"/>
+        <line x1="72" y1="212" x2="90" y2="212" stroke="#d8c8a6" stroke-width="1.2"/>
+      </g>
+
+      <!-- 手（丸い小さい前足）-->
+      <ellipse cx="72" cy="186" rx="10" ry="8" fill="#f0ece4" filter="url(#fluffy)"/>
+      <ellipse cx="132" cy="186" rx="10" ry="8" fill="#f0ece4" filter="url(#fluffy)"/>
+    </svg>
+
+    <div class="bubble">
+      <div id="cheerText" class="mincho">無理せず、一緒に頑張りましょう。<br><span class="accent">応援しています！</span></div>
+      <div class="line"></div>
+      <button class="reroll" id="cheerBtn">もう一言 ❀</button>
+    </div>
+  </section>
+
+  <!-- 読書週間：桜の枝 -->
+  <section class="card">
+    <h2 class="mincho"><span class="seal">週</span>今週の読書週間</h2>
+    <p class="desc">読んだ日のつぼみをそっと押すと、桜が咲きます。一週間でひと枝、満開を目指して。</p>
+    <div class="week" id="week"></div>
+    <p class="week-note" id="weekNote"></p>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <button class="btn ghost" id="weekResetBtn" style="font-size:.78rem;padding:7px 16px;">今週の桜をリセット 🌿</button>
+      <span style="font-size:.68rem;color:var(--ink-soft);" id="weekAutoResetInfo"></span>
+    </div>
+  </section>
+
+  <!-- 朝の一服（朝活） -->
+  <section class="card">
+    <h2 class="mincho"><span class="seal">朝</span>朝の一服</h2>
+    <p class="desc">朝、いちばんに頁をひらく合図です。今日の一行をうけとって、静かに始めましょう。</p>
+    <div class="btn-row">
+      <button class="btn wood" id="morningBtn">今日の頁をひらく</button>
+      <span class="morning-state" id="morningState">まだ今日の頁はひらいていません。</span>
+    </div>
+    <div class="morning-word" id="morningWord">
+      <div class="k">今日の一行</div>
+      <div class="t mincho" id="morningWordText"></div>
+    </div>
+  </section>
+
+  <!-- 今日の読書（今日すること） -->
+  <section class="card">
+    <h2 class="mincho"><span class="seal">読</span>今日の読書</h2>
+    <p class="desc">今日めくる本と、ちいさな目標を一つだけ。読み終えたら和菓子がひとつ増えます。</p>
+    <div class="field">
+      <label for="bookTitle">今日の本</label>
+      <input class="input" id="bookTitle" placeholder="例）リーダブルコード">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="goalNum">今日の目標</label>
+        <input class="input" id="goalNum" type="number" min="1" placeholder="30">
+      </div>
+      <div class="field">
+        <label for="goalUnit">単位</label>
+        <select class="select" id="goalUnit">
+          <option value="ページ">ページ</option>
+          <option value="分">分</option>
+          <option value="章">章</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="finishBtn">読み終えた 🍵</button>
+      <span class="morning-state" id="readState"></span>
+    </div>
+  </section>
+
+  <!-- 学びの手帖（四段階） -->
+  <section class="card">
+    <h2 class="mincho"><span class="seal">帖</span>学びの手帖</h2>
+    <p class="desc">読んで分かったことを、四段階でそっと書き留めます。一言まとめまで書ければ、もう自分の言葉です。</p>
+    <div class="four-hint">📖 うさうさ流・四段階：<b>定義</b>（何か）→ <b>たとえ</b>（何に似てる）→ <b>詳細</b>（もう一歩）→ <b>一言まとめ</b>（自分の言葉で）</div>
+    <div class="field">
+      <label for="nTitle">テーマ・キーワード</label>
+      <input class="input" id="nTitle" placeholder="例）べき等性">
+    </div>
+    <div class="field"><label for="nDef">① 定義（ひとことで言うと）</label><textarea class="textarea" id="nDef"></textarea></div>
+    <div class="field"><label for="nMeta">② たとえ（何に似ている？）</label><textarea class="textarea" id="nMeta"></textarea></div>
+    <div class="field"><label for="nDetail">③ 詳細（もう一歩ふみこむと）</label><textarea class="textarea" id="nDetail"></textarea></div>
+    <div class="field"><label for="nSum">④ 一言まとめ（自分の言葉で）</label><textarea class="textarea" id="nSum"></textarea></div>
+    <div class="btn-row">
+      <button class="btn sakura" id="noteSaveBtn">手帖に綴じる 📌</button>
+      <button class="btn ghost" id="noteClearBtn">入力を消す</button>
+    </div>
+    <div class="input-draft-status" id="inputDraftStatus" style="display:none;"></div>
+    <div class="note-tools" id="noteTools" style="display:none;">
+      <label class="pick-all"><input type="checkbox" id="pickAll">全選択</label>
+      <span class="pick-count" id="pickCount">0 枚選択中</span>
+      <button class="btn danger" id="bulkDelBtn" disabled>☑ 選択した手帖を外す</button>
+    </div>
+    <div class="notes" id="notes"></div>
+  </section>
+
+  <!-- 和菓子棚 -->
+  <section class="card">
+    <h2 class="mincho"><span class="seal">菓</span>ごほうびの和菓子棚</h2>
+    <p class="desc">朝の頁・今日の読書・手帖を綴じるたびに、和菓子がひとつ並びます。今日もお疲れさまの一服を。</p>
+    <div class="tray">
+      <div class="grid" id="trayGrid"></div>
+      <div class="count" id="trayCount"></div>
+    </div>
+    <div class="btn-row" style="margin-top:14px;justify-content:space-between;align-items:flex-start;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="cafe-toggle">
+          <label class="switch"><input type="checkbox" id="cafeSwitch"><span class="slider"></span></label>
+          和カフェモード
+        </div>
+        <div class="cafe-toggle">
+          <label class="switch"><input type="checkbox" id="autoEraseSwitch"><span class="slider"></span></label>
+          手帖を一週間で自動消去
+        </div>
+      </div>
+      <button class="btn ghost" id="resetBtn">記録をリセット</button>
+    </div>
+    <!-- ツールバー -->
+    <div class="toolbar" id="toolbar">
+      <button class="tool-btn save" id="saveDraftBtn" title="現在の状態を一時保存します">
+        <span class="tool-icon">💾</span>一時保存
+      </button>
+      <button class="tool-btn load" id="loadDraftBtn" title="一時保存した状態を復元します" disabled>
+        <span class="tool-icon">📂</span>復元
+      </button>
+      <button class="tool-btn md" id="mdDownBtn" title="手帖の記録をMarkdownでダウンロードします">
+        <span class="tool-icon">📄</span>MD出力
+      </button>
+      <button class="tool-btn log" id="errlogToggleBtn" title="エラーログの表示／非表示">
+        <span class="tool-icon">🩺</span>ログ
+      </button>
+    </div>
+    <div id="draftStatus" class="draft-status"></div>
+  </section>
+
+  <!-- エラーログ -->
+  <section class="card errlog" id="errlog" aria-live="polite">
+    <h2 class="mincho"><span class="seal log">録</span>エラーログ<span class="errlog-count" id="errlogCount">0 件</span></h2>
+    <p class="desc">不具合が起きたとき、ここに記録が残ります（タブを閉じても保持されます）。サポートに連絡するときは、この内容を添えてください。</p>
+    <div class="errlog-body" id="errlogBody"></div>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn ghost" id="errlogCopyBtn" style="font-size:.78rem;padding:7px 14px;">ログをコピー 📋</button>
+      <button class="btn ghost" id="errlogClearBtn" style="font-size:.78rem;padding:7px 14px;">ログを消す</button>
+      <button class="btn ghost" id="errlogTestBtn" style="font-size:.78rem;padding:7px 14px;">動作テスト（疑似エラー）🧪</button>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="mincho">一歩ずつ前へ ── 焦らず、あなたのペースで。</div>
+    <div class="seal-mark mincho">うさうさ研修工房</div>
+    <div style="margin-top:8px;font-size:.62rem;color:var(--ink-soft);letter-spacing:.12em;">ver 8.0</div>
+  </footer>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============ エラーログ（画面表示＋永続化／タブを閉じても残す）============ */
+var Logger = (function(){
+  var LKEY = "usausa_techo_errlog_v1";
+  var MAX = 50;
+  var entries = [];
+  try{ var raw = localStorage.getItem(LKEY); if(raw){ entries = JSON.parse(raw) || []; } }catch(e){ entries = []; }
+
+  function byId(id){ return document.getElementById(id); }
+  function pad(n){ return String(n).padStart(2,"0"); }
+  function ts(){
+    var d = new Date();
+    return d.getFullYear()+"/"+pad(d.getMonth()+1)+"/"+pad(d.getDate())+" "
+         + pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());
+  }
+  function escTxt(s){
+    return String(s==null?"":s).replace(/[&<>]/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];
+    });
+  }
+  function persist(){
+    try{ localStorage.setItem(LKEY, JSON.stringify(entries.slice(-MAX))); }catch(e){}
+  }
+  function render(){
+    var panel=byId("errlog"), body=byId("errlogBody"), cnt=byId("errlogCount");
+    if(!body) return;
+    if(cnt) cnt.textContent = entries.length + " 件";
+    if(panel && entries.length) panel.classList.add("show");
+    if(!entries.length){
+      body.innerHTML = "<div class='errlog-empty'>まだエラーはありません。順調です 🌿</div>";
+      return;
+    }
+    body.innerHTML = "";
+    entries.slice().reverse().forEach(function(en){
+      var row=document.createElement("div");
+      row.className="errlog-row lv-"+(en.lv||"info");
+      row.innerHTML =
+        "<span class='errlog-time'>"+escTxt(en.t)+"</span>"+
+        "<span class='errlog-ctx'>"+escTxt(en.c)+"</span>"+
+        "<span class='errlog-msg'>"+escTxt(en.m)+"</span>";
+      body.appendChild(row);
+    });
+  }
+  function add(level, context, msg){
+    var en={ t:ts(), lv:level, c:context||"", m:(msg==null?"":String(msg)) };
+    entries.push(en);
+    if(entries.length>MAX) entries = entries.slice(-MAX);
+    persist();
+    try{ render(); }catch(e){}
+    try{ (level==="error"?console.error:console.warn)("[うさうさ]["+level+"] "+context+": "+en.m); }catch(e){}
+    return en;
+  }
+  function fmt(err){
+    if(err && err.stack) return (err.message||"")+"\n"+err.stack;
+    if(err && err.message) return err.message;
+    return err;
+  }
+  return {
+    error:function(ctx,err){ return add("error", ctx, fmt(err)); },
+    warn :function(ctx,m){  return add("warn",  ctx, m); },
+    info :function(ctx,m){  return add("info",  ctx, m); },
+    clear:function(){ entries=[]; persist(); render(); },
+    render:render,
+    entries:function(){ return entries.slice(); }
+  };
+})();
+
+/* グローバル例外を捕捉してログに残す */
+window.addEventListener("error", function(ev){
+  Logger.error("window.onerror",
+    (ev.message||"") + (ev.filename ? (" @"+ev.filename+":"+ev.lineno+":"+ev.colno) : ""));
+});
+window.addEventListener("unhandledrejection", function(ev){
+  var r = ev.reason;
+  Logger.error("unhandledrejection", (r && r.stack) ? (r.message+"\n"+r.stack) : (r && r.message ? r.message : r));
+});
+
+/* ============ 安全な保存（オフライン単体HTML / プレビュー両対応） ============ */
+var Store = (function(){
+  var mem = {}, ok = false;
+  try{ var k="__usa_test__"; localStorage.setItem(k,"1"); localStorage.removeItem(k); ok=true; }
+  catch(e){ ok=false; try{ Logger.warn("Store", "localStorageが使えないためメモリ保存に切替えます: "+(e&&e.message)); }catch(_){} }
+  return {
+    available:function(){ return ok; },
+    get:function(key,def){
+      try{ if(ok){ var v=localStorage.getItem(key); return v===null?def:JSON.parse(v); } }
+      catch(e){ Logger.error("Store.get("+key+")", e); }
+      return (key in mem)?mem[key]:def;
+    },
+    set:function(key,val){
+      try{ if(ok){ localStorage.setItem(key,JSON.stringify(val)); return true; } }
+      catch(e){ Logger.error("Store.set("+key+")", e); ok=false; }
+      mem[key]=val; return false;
+    },
+    remove:function(key){
+      try{ if(ok){ localStorage.removeItem(key); } }
+      catch(e){ Logger.error("Store.remove("+key+")", e); }
+      delete mem[key];
+    }
+  };
+})();
+var KEY="usausa_techo_v1";
+function load(){ return Store.get(KEY,null) || {wagashi:0, notes:[], morningDate:null, readDate:null, weekStart:null, weekDone:[false,false,false,false,false,false,false], weekBare:false, streak:0, lastDay:null}; }
+function save(){ Store.set(KEY,state); }
+var state = load();
+
+/* ============ カスタムモーダル（sandbox内でprompt/confirmが無効化される対策）============ */
+var Modal = (function(){
+  var overlay=null, box=null, msgEl=null, inputWrap=null, inputEl=null, okBtn=null, cancelBtn=null;
+  var resolver=null, mode="confirm";
+
+  function injectStyle(){
+    if(document.getElementById("usausa-modal-style")) return;
+    var css=
+      ".usa-modal-overlay{position:fixed;inset:0;background:rgba(70,60,48,.42);"+
+      "display:none;align-items:center;justify-content:center;z-index:50;padding:20px;"+
+      "-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}"+
+      ".usa-modal-overlay.show{display:flex;animation:usaFade .18s ease;}"+
+      "@keyframes usaFade{from{opacity:0}to{opacity:1}}"+
+      ".usa-modal{background:linear-gradient(180deg,#fbf6ea,#f1e6cd);border:1px solid #d8c8a6;"+
+      "border-radius:16px;max-width:380px;width:100%;padding:22px 22px 18px;"+
+      "box-shadow:0 16px 44px rgba(70,50,30,.32);position:relative;overflow:hidden;"+
+      "font-family:inherit;animation:usaRise .22s ease;}"+
+      "@keyframes usaRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}"+
+      ".usa-modal::before{content:'';position:absolute;left:0;right:0;top:0;height:4px;"+
+      "background:linear-gradient(90deg,#c4553c,#c6985a,#e3a0a8,#8a9a5b);opacity:.7;}"+
+      ".usa-modal-msg{font-size:.92rem;line-height:1.7;color:#463c30;white-space:pre-wrap;margin-bottom:14px;}"+
+      ".usa-modal-input{width:100%;padding:10px 12px;border:1px solid #d8c8a6;border-radius:10px;"+
+      "background:#fffdf7;color:#463c30;font-size:.92rem;font-family:inherit;margin-bottom:14px;box-sizing:border-box;}"+
+      ".usa-modal-input:focus{outline:2px solid #c6985a;outline-offset:1px;border-color:#c6985a;}"+
+      ".usa-modal-btns{display:flex;gap:10px;justify-content:flex-end;}"+
+      ".usa-modal-btn{appearance:none;border:none;cursor:pointer;font-family:inherit;border-radius:22px;"+
+      "padding:9px 20px;font-size:.86rem;letter-spacing:.04em;transition:filter .12s,transform .12s;}"+
+      ".usa-modal-btn:hover{filter:brightness(1.06);transform:translateY(-1px);}"+
+      ".usa-modal-btn.ok{background:#8a9a5b;color:#fff;box-shadow:0 4px 10px rgba(110,125,70,.3);}"+
+      ".usa-modal-btn.cancel{background:transparent;color:#6f6453;border:1px solid #d8c8a6;}";
+    var st=document.createElement("style");
+    st.id="usausa-modal-style"; st.textContent=css;
+    document.head.appendChild(st);
+  }
+
+  function build(){
+    injectStyle();
+    overlay=document.createElement("div"); overlay.className="usa-modal-overlay";
+    box=document.createElement("div"); box.className="usa-modal";
+    msgEl=document.createElement("div"); msgEl.className="usa-modal-msg mincho";
+    inputWrap=document.createElement("div");
+    inputEl=document.createElement("input"); inputEl.className="usa-modal-input"; inputEl.type="text";
+    inputWrap.appendChild(inputEl); inputWrap.style.display="none";
+    var btns=document.createElement("div"); btns.className="usa-modal-btns";
+    cancelBtn=document.createElement("button"); cancelBtn.className="usa-modal-btn cancel"; cancelBtn.textContent="キャンセル";
+    okBtn=document.createElement("button"); okBtn.className="usa-modal-btn ok"; okBtn.textContent="OK";
+    btns.appendChild(cancelBtn); btns.appendChild(okBtn);
+    box.appendChild(msgEl); box.appendChild(inputWrap); box.appendChild(btns);
+    overlay.appendChild(box); document.body.appendChild(overlay);
+
+    okBtn.addEventListener("click",function(){ done(mode==="prompt"? inputEl.value : true); });
+    cancelBtn.addEventListener("click",function(){ done(mode==="prompt"? null : false); });
+    overlay.addEventListener("click",function(e){ if(e.target===overlay){ cancelBtn.click(); } });
+    inputEl.addEventListener("keydown",function(e){
+      if(e.key==="Enter"){ e.preventDefault(); okBtn.click(); }
+      else if(e.key==="Escape"){ cancelBtn.click(); }
+    });
+    document.addEventListener("keydown",function(e){
+      if(overlay && overlay.classList.contains("show") && e.key==="Escape"){ cancelBtn.click(); }
+    });
+  }
+
+  function done(val){
+    if(overlay) overlay.classList.remove("show");
+    var r=resolver; resolver=null;
+    if(r) r(val);
+  }
+
+  function open(m, message, def, okText){
+    try{
+      if(!overlay) build();
+      mode=m;
+      msgEl.textContent=message;
+      okBtn.textContent=okText||"OK";
+      if(m==="prompt"){
+        inputWrap.style.display="block";
+        inputEl.value=(def==null?"":def);
+      } else {
+        inputWrap.style.display="none";
+      }
+      overlay.classList.add("show");
+      setTimeout(function(){
+        if(m==="prompt"){ try{ inputEl.focus(); inputEl.select(); }catch(e){} }
+        else { try{ okBtn.focus(); }catch(e){} }
+      },30);
+      return new Promise(function(res){ resolver=res; });
+    }catch(e){
+      try{ Logger.error("Modal.open", e); }catch(_){}
+      // 最後の保険：標準ダイアログにフォールバック
+      return new Promise(function(res){
+        try{
+          if(m==="prompt"){ res(window.prompt(message, def==null?"":def)); }
+          else { res(window.confirm(message)); }
+        }catch(err){ res(m==="prompt"? null : false); }
+      });
+    }
+  }
+
+  return {
+    confirm:function(message,okText){ return open("confirm",message,null,okText||"はい"); },
+    prompt :function(message,def){ return open("prompt",message,def,"OK"); }
+  };
+})();
+
+/* ============ 日付ユーティリティ ============ */
+function todayKey(){ var d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+function dayIndex(){ return (new Date()).getDay(); } // 0=日
+function weekKey(){ var d=new Date(); var s=new Date(d.getFullYear(),d.getMonth(),d.getDate()-d.getDay()); return s.getFullYear()+"-"+(s.getMonth()+1)+"-"+s.getDate(); }
+
+/* 週が変わっていたらリセット */
+(function checkWeek(){
+  var wk=weekKey();
+  if(state.weekStart!==wk){ state.weekStart=wk; state.weekDone=[false,false,false,false,false,false,false]; state.weekBare=false; save(); }
+})();
+
+/* ============ 今週の読書週間リセット ============ */
+
+/* 今週の桜（weekDone）だけをリセットする共通処理 */
+function resetWeekDone(silent){
+  for(var i=0;i<7;i++) state.weekDone[i]=false;
+  state.weekBare = true;            // つぼみをすべて消して「閉じた」状態にする
+  state.weekStart = weekKey();
+  save();
+  renderWeek();
+  if(!silent) toast("今週の桜を閉じました。つぼみをすべて消しました 🌿");
+}
+
+/* ===== 毎週日曜 23:59:59 の自動リセット（単一の真実）===== */
+var WEEK_RESET_HOUR = 23, WEEK_RESET_MIN = 59, WEEK_RESET_SEC = 59;
+
+/* now から見た「次の日曜 23:59:59」を返す純粋関数。
+   ・今日が日曜で 23:59:59 より前なら当日を返す
+   ・それ以外（同時刻ちょうど含む）は翌週の日曜
+   ・常に getDay()===0（日曜）を返す */
+function nextSundayReset(now){
+  now = now || new Date();
+  var target = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+                        WEEK_RESET_HOUR, WEEK_RESET_MIN, WEEK_RESET_SEC, 0);
+  var add = (7 - now.getDay()) % 7;           // 次の日曜までの日数（日曜なら0）
+  target.setDate(target.getDate() + add);
+  if(target.getTime() <= now.getTime()){      // 当日分を過ぎていたら翌週へ
+    target.setDate(target.getDate() + 7);
+  }
+  return target;
+}
+
+/* 次の日曜23:59:59までのミリ秒 */
+function msUntilSundayEnd(){ return nextSundayReset(new Date()).getTime() - Date.now(); }
+
+/* 次回リセット時刻のラベル（表示用） */
+function nextResetLabel(){
+  var t = nextSundayReset(new Date());
+  var pad = function(n){ return String(n).padStart(2, "0"); };
+  return t.getFullYear() + "/" + pad(t.getMonth()+1) + "/" + pad(t.getDate())
+    + "（日）" + pad(WEEK_RESET_HOUR) + ":" + pad(WEEK_RESET_MIN);
+}
+
+/* 再帰タイマー：日曜23:59:59に weekDone を自動リセット */
+var _weekResetTimer = null;
+var _weekResetTarget = null;
+function updateResetInfo(){
+  var info = document.getElementById("weekAutoResetInfo");
+  if(info) info.textContent = "🔄 次回自動リセット：" + nextResetLabel();
+}
+function fireWeekAutoReset(){
+  resetWeekDone(false);
+  toast("今週の桜を自動でリセットしました（日曜23:59）🌿");
+}
+function scheduleWeekAutoReset(){
+  if(_weekResetTimer){ clearTimeout(_weekResetTimer); _weekResetTimer=null; }
+  var target = nextSundayReset(new Date());
+  _weekResetTarget = target.getTime();
+  var ms = _weekResetTarget - Date.now();
+  if(ms < 0) ms = 0;
+  updateResetInfo();
+  _weekResetTimer = setTimeout(function(){
+    fireWeekAutoReset();
+    scheduleWeekAutoReset(); // 次週分をセット
+  }, ms);
+}
+/* 取りこぼし救済：スリープ等でタイマーが飛び、予定時刻を過ぎていたら復帰時に実行 */
+function checkMissedWeekReset(){
+  if(_weekResetTarget && Date.now() >= _weekResetTarget){
+    fireWeekAutoReset();
+    scheduleWeekAutoReset();
+  } else {
+    updateResetInfo();
+  }
+}
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "visible") checkMissedWeekReset();
+});
+window.addEventListener("focus", checkMissedWeekReset);
+scheduleWeekAutoReset();
+
+
+/* 手動リセットボタン */
+document.getElementById("weekResetBtn").addEventListener("click", function(){
+  resetWeekDone(false);
+});
+
+/* ============ 手帖の自動消去（一週間）============ */
+var AUTOERASE_KEY="usausa_autoerase_v1";
+var NOTE_TTL_DAYS=7;
+var autoEraseOn=Store.get(AUTOERASE_KEY,false);
+
+/* 作成から7日を過ぎた手帖を外す。外した枚数を返す。 */
+function sweepOldNotes(){
+  if(!autoEraseOn) return 0;
+  var now=Date.now();
+  var ttl=NOTE_TTL_DAYS*24*60*60*1000;
+  var before=state.notes.length;
+  state.notes=state.notes.filter(function(n){
+    var t=(typeof n.id==="number")?n.id:0;   // id（作成時刻）が無い旧データは安全のため残す
+    return t===0 || (now-t)<ttl;
+  });
+  var removed=before-state.notes.length;
+  if(removed>0) save();
+  return removed;
+}
+
+/* ============ メッセージ素材 ============ */
+var cheers=[
+  ["無理せず、一緒に頑張りましょう。","応援しています！"],
+  ["一歩ずつ前へ。","今日の一頁で十分です。"],
+  ["読めた日も、読めなかった日も、","あなたのペースで大丈夫。"],
+  ["お茶でも淹れて、","ゆっくり頁をめくりましょう。"],
+  ["焦らなくていい。","本は逃げませんから。"],
+  ["難しい所は、","付箋を貼って先へ進んでも良いのです。"],
+  ["三行でも読めば、","それは立派な読書です。"],
+  ["昨日のあなたより、","一頁ぶん前にいます。"],
+  ["静かな時間を、","自分にひとつ贈りましょう。"],
+  ["わからない言葉に出会えたら、","それは成長のしるし。"],
+  ["今日もよく頑張りました。","残りは明日のあなたへ。"],
+  ["読書は競争ではありません。","散歩のように楽しんで。"],
+  ["膝の上に本を一冊。","それだけで今日は花丸です。"],
+  ["眠くなったら閉じてよし。","つづきは、またいつか。"],
+  ["小さな積み重ねが、","やがて大きな知になります。"]
+];
+var morningWords=[
+  "今日の一頁が、明日のあなたを少し賢くする。",
+  "朝のひかりの中で、ことばをひとつ拾いましょう。",
+  "目標は小さく。続けることは大きく。",
+  "深呼吸ひとつ。それから、しおりを外して。",
+  "わからなくていい。出会うことに意味がある。",
+  "今日読む一行を、夜のあなたへの贈り物に。",
+  "急がず、止まらず、あなたの速さで。",
+  "知りたいという気持ちを、そっと連れて行こう。",
+  "一服のお茶と、一頁の言葉から。",
+  "昨日の続きから。それで十分はなまるです。"
+];
+var ranks=[ // [必要和菓子数, 称号]
+  [0,"読みはじめ"],[3,"三日の頁"],[7,"一週の読み手"],[14,"栞づかい"],
+  [25,"手帖の人"],[40,"読書の達人"],[60,"博覧の兎"],[90,"大賢兎"]
+];
+var wagashiIcons=["🍡","🍵","🌸","🍶","🍂","🌰","🍵","🍡","🌸","🍂"];
+
+/* ============ DOM ============ */
+function $(id){ return document.getElementById(id); }
+function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove("show");},2200); }
+
+function rankOf(n){ var r=ranks[0][1]; for(var i=0;i<ranks.length;i++){ if(n>=ranks[i][0]) r=ranks[i][1]; } return r; }
+
+function renderHeader(){
+  $("rankVal").textContent=rankOf(state.wagashi);
+  $("streakVal").textContent="継続 "+state.streak+"日";
+}
+
+/* 応援の言葉 */
+function rollCheer(){
+  var c=cheers[Math.floor(Math.random()*cheers.length)];
+  $("cheerText").innerHTML=c[0]+"<br><span class='accent'>"+c[1]+"</span>";
+}
+
+/* 和菓子棚 */
+function renderTray(){
+  var grid=$("trayGrid"); grid.innerHTML="";
+  var cols= window.innerWidth<=560?6:8;
+  var slots=Math.max(cols*2, Math.ceil(state.wagashi/cols)*cols, 16);
+  for(var i=0;i<slots;i++){
+    var d=document.createElement("div");
+    d.className="wagashi"+(i<state.wagashi?" filled":"");
+    d.textContent= i<state.wagashi? wagashiIcons[i%wagashiIcons.length] : "";
+    grid.appendChild(d);
+  }
+  $("trayCount").textContent="集めた和菓子：" + state.wagashi + " 個　／　称号：" + rankOf(state.wagashi);
+}
+function addWagashi(n,why){
+  var prevRank=rankOf(state.wagashi);
+  state.wagashi += n; save();
+  renderTray(); renderHeader();
+  // ポップ演出
+  var filled=document.querySelectorAll("#trayGrid .wagashi.filled");
+  if(filled.length){ var last=filled[filled.length-1]; last.classList.add("pop"); setTimeout(function(){last.classList.remove("pop");},420); }
+  var newRank=rankOf(state.wagashi);
+  if(newRank!==prevRank){ toast("称号アップ！『"+newRank+"』になりました 🌸"); }
+  else if(why){ toast(why+" 和菓子 +"+n+" 🍡"); }
+}
+
+/* 継続日数の更新 */
+function touchStreak(){
+  var tk=todayKey();
+  if(state.lastDay===tk) return; // 今日はもう更新済み
+  // 連続判定
+  var y=new Date(); y.setDate(y.getDate()-1);
+  var yk=y.getFullYear()+"-"+(y.getMonth()+1)+"-"+y.getDate();
+  if(state.lastDay===yk) state.streak+=1;
+  else state.streak=1;
+  state.lastDay=tk; save(); renderHeader();
+}
+
+/* 読書週間 */
+function renderWeek(){
+  var labels=["日","月","火","水","木","金","土"];
+  var wk=$("week"); wk.innerHTML="";
+  var ti=dayIndex();
+  var bare=!!state.weekBare;
+  for(var i=0;i<7;i++){
+    var done=state.weekDone[i];
+    var closed=bare && !done;          // リセット後：つぼみを消した「閉じた」状態
+    var cell=document.createElement("div");
+    cell.className="day"+(done?" done":"")+(closed?" closed":"")+(i===ti?" today":"");
+    var b=document.createElement("div");
+    b.className="blossom";
+    b.textContent= done?"🌸":(closed?"":"🪷");
+    b.title= done?"咲いた":(closed?"閉じています（押すと咲きます）":"つぼみ（押すと咲きます）");
+    (function(idx){ b.addEventListener("click",function(){ toggleWeekDay(idx); }); })(i);
+    var l=document.createElement("div"); l.className="lbl"; l.textContent=labels[i];
+    cell.appendChild(b); cell.appendChild(l); wk.appendChild(cell);
+  }
+  var n=state.weekDone.filter(Boolean).length;
+  var note=$("weekNote");
+  if(n===0 && bare) note.textContent="枝を整えました。つぼみはすべて閉じています。読んだ日をそっと押すと、また桜が咲きます。";
+  else if(n===0) note.textContent="今週はまだこれから。最初のつぼみを咲かせましょう。";
+  else if(n>=7) note.textContent="満開です！今週、よく続けましたね。🌸🌸🌸";
+  else note.textContent="今週は "+n+"/7 日。あと "+(7-n)+" 日でひと枝、満開に。";
+}
+function toggleWeekDay(i){
+  var was=state.weekDone[i];
+  state.weekDone[i]=!was; save(); renderWeek();
+  if(!was){ addWagashi(1,"桜が咲いた！"); touchStreak(); }
+}
+
+/* 朝の一服 */
+function renderMorning(){
+  if(state.morningDate===todayKey()){
+    $("morningState").textContent="今日の頁はもうひらきました。良い一日を。";
+    $("morningWord").classList.add("show");
+    if(!$("morningWordText").textContent) $("morningWordText").textContent=morningWords[(new Date().getDate())%morningWords.length];
+  }else{
+    $("morningState").textContent="まだ今日の頁はひらいていません。";
+    $("morningWord").classList.remove("show");
+  }
+}
+$("morningBtn").addEventListener("click",function(){
+  var first = state.morningDate!==todayKey();
+  state.morningDate=todayKey(); save();
+  $("morningWordText").textContent=morningWords[Math.floor(Math.random()*morningWords.length)];
+  renderMorning();
+  // 今日の曜日のつぼみも咲かせる
+  var ti=dayIndex();
+  if(!state.weekDone[ti]){ state.weekDone[ti]=true; save(); renderWeek(); }
+  touchStreak();
+  if(first){ addWagashi(1,"朝の頁をひらいた！"); }
+  else { toast("おかえりなさい。今日の一行をどうぞ 🍵"); }
+});
+
+/* 今日の読書 */
+$("finishBtn").addEventListener("click",function(){
+  var title=$("bookTitle").value.trim();
+  var num=$("goalNum").value.trim();
+  var unit=$("goalUnit").value;
+  if(state.readDate===todayKey()){
+    toast("今日はもう読み終えています。よく頑張りました 🌸"); return;
+  }
+  state.readDate=todayKey(); save();
+  var msg = title? "『"+title+"』お疲れさまでした" : "今日の読書、お疲れさまでした";
+  if(num) msg += "（"+num+unit+"）";
+  $("readState").textContent=msg+" 🍵";
+  var ti=dayIndex(); if(!state.weekDone[ti]){ state.weekDone[ti]=true; save(); renderWeek(); }
+  touchStreak();
+  addWagashi(1,"今日の読書、達成！");
+  rollCheer();
+  if(typeof InputDraft!=="undefined") InputDraft.clearReading();
+});
+
+/* 学びの手帖 */
+function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+function renderNotes(){
+  var box=$("notes"); box.innerHTML="";
+  var tools=$("noteTools");
+  if(!state.notes.length){
+    box.innerHTML="<div class='empty'>まだ手帖は空っぽです。最初の一枚を綴じてみましょう。</div>";
+    if(tools) tools.style.display="none";
+    return;
+  }
+  if(tools) tools.style.display="flex";
+  if($("pickAll")) $("pickAll").checked=false;
+  state.notes.slice().reverse().forEach(function(n){
+    var el=document.createElement("div"); el.className="note has-pick";
+    var rows="";
+    if(n.def)    rows+="<dt>定義</dt><dd>"+esc(n.def)+"</dd>";
+    if(n.meta)   rows+="<dt>たとえ</dt><dd>"+esc(n.meta)+"</dd>";
+    if(n.detail) rows+="<dt>詳細</dt><dd>"+esc(n.detail)+"</dd>";
+    if(n.sum)    rows+="<dt>まとめ</dt><dd>"+esc(n.sum)+"</dd>";
+    el.innerHTML="<input type='checkbox' class='pick' title='選択' data-id='"+n.id+"'>"+
+      "<button class='del' title='削除'>× 外す</button>"+
+      "<p class='ttl mincho'>"+esc(n.title||"（無題）")+"</p>"+
+      "<dl>"+rows+"</dl>"+
+      "<div class='meta'>"+esc(n.date)+"</div>";
+    var pick=el.querySelector(".pick");
+    pick.addEventListener("change",function(){
+      el.classList.toggle("sel",pick.checked);
+      updatePickState();
+    });
+    el.querySelector(".del").addEventListener("click",function(){
+      state.notes=state.notes.filter(function(x){return x.id!==n.id;}); save(); renderNotes();
+      toast("手帖から一枚外しました");
+    });
+    box.appendChild(el);
+  });
+  updatePickState();
+}
+
+/* 選択状態の更新（件数表示・ボタン活性・全選択チェック） */
+function updatePickState(){
+  var picks=document.querySelectorAll("#notes .pick");
+  var checked=document.querySelectorAll("#notes .pick:checked");
+  var n=checked.length, total=picks.length;
+  var cnt=$("pickCount"), btn=$("bulkDelBtn"), all=$("pickAll");
+  if(cnt) cnt.textContent=n+" 枚選択中";
+  if(btn){ btn.disabled=(n===0); btn.textContent="☑ 選択した手帖を外す"+(n?"（"+n+"枚）":""); }
+  if(all){ all.checked=(total>0 && n===total); all.indeterminate=(n>0 && n<total); }
+}
+$("noteSaveBtn").addEventListener("click",function(){
+  var t=$("nTitle").value.trim();
+  var def=$("nDef").value.trim(), meta=$("nMeta").value.trim(), detail=$("nDetail").value.trim(), sum=$("nSum").value.trim();
+  if(!t && !def && !meta && !detail && !sum){ toast("何か一つ書いてから綴じましょう"); return; }
+  var d=new Date();
+  state.notes.push({
+    id:Date.now(), title:t, def:def, meta:meta, detail:detail, sum:sum,
+    date:d.getFullYear()+"."+(d.getMonth()+1)+"."+d.getDate()
+  });
+  save(); renderNotes();
+  ["nTitle","nDef","nMeta","nDetail","nSum"].forEach(function(id){ $(id).value=""; });
+  if(typeof InputDraft!=="undefined") InputDraft.clearNote();
+  touchStreak();
+  addWagashi(1,"手帖を一枚綴じた！");
+});
+$("noteClearBtn").addEventListener("click",function(){
+  ["nTitle","nDef","nMeta","nDetail","nSum"].forEach(function(id){ $(id).value=""; });
+  if(typeof InputDraft!=="undefined") InputDraft.clearNote();
+});
+
+/* ============ 書きかけ入力の自動保存（タブを閉じても残す）============ */
+var INPUT_DRAFT_KEY = "usausa_techo_input_v1";
+var INPUT_FIELDS = ["bookTitle","goalNum","goalUnit","nTitle","nDef","nMeta","nDetail","nSum"];
+var NOTE_FIELDS  = ["nTitle","nDef","nMeta","nDetail","nSum"];
+var READ_FIELDS  = ["bookTitle","goalNum","goalUnit"];
+
+function hasInputContent(d){
+  if(!d) return false;
+  return INPUT_FIELDS.some(function(id){ return id!=="goalUnit" && d[id]; });
+}
+function updateInputDraftStatus(){
+  var el=$("inputDraftStatus"); if(!el) return;
+  var d=Store.get(INPUT_DRAFT_KEY,null);
+  if(hasInputContent(d)){
+    var when="";
+    if(d._savedAt){
+      var dt=new Date(d._savedAt), p=function(n){return String(n).padStart(2,"0");};
+      when="（"+p(dt.getHours())+":"+p(dt.getMinutes())+":"+p(dt.getSeconds())+"）";
+    }
+    el.textContent="✍️ 書きかけを自動保存中"+when+" ── タブを閉じても残ります";
+    el.style.display="block";
+  } else {
+    el.textContent=""; el.style.display="none";
+  }
+}
+
+var InputDraft = (function(){
+  var timer=null;
+  function collect(){
+    var o={};
+    INPUT_FIELDS.forEach(function(id){ var el=$(id); if(el) o[id]=el.value; });
+    o._savedAt=Date.now();
+    return o;
+  }
+  function persist(){
+    try{ Store.set(INPUT_DRAFT_KEY, collect()); updateInputDraftStatus(); }
+    catch(e){ Logger.error("InputDraft.persist", e); }
+  }
+  function scheduleSave(){ clearTimeout(timer); timer=setTimeout(persist, 600); }
+  function restore(){
+    var d=Store.get(INPUT_DRAFT_KEY,null);
+    if(!d) return 0;
+    var restored=0;
+    INPUT_FIELDS.forEach(function(id){
+      var el=$(id); if(!el) return;
+      if(typeof d[id]==="string" && d[id]!==""){
+        el.value=d[id];
+        if(id!=="goalUnit") restored++;
+      }
+    });
+    return restored;
+  }
+  function clearFields(list){
+    var d=Store.get(INPUT_DRAFT_KEY,null);
+    if(!d){ updateInputDraftStatus(); return; }
+    list.forEach(function(id){ d[id]=(id==="goalUnit")?"ページ":""; });
+    if(hasInputContent(d)){ d._savedAt=Date.now(); Store.set(INPUT_DRAFT_KEY,d); }
+    else { Store.remove(INPUT_DRAFT_KEY); }
+    updateInputDraftStatus();
+  }
+  function bind(){
+    INPUT_FIELDS.forEach(function(id){
+      var el=$(id); if(!el) return;
+      if(el.tagName==="SELECT"){ el.addEventListener("change", persist); }
+      else { el.addEventListener("input", scheduleSave); el.addEventListener("change", persist); }
+    });
+    window.addEventListener("beforeunload", persist);
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState==="hidden") persist();
+    });
+  }
+  return {
+    bind:bind,
+    restore:restore,
+    persist:persist,
+    clearNote:function(){ clearFields(NOTE_FIELDS); },
+    clearReading:function(){ clearFields(READ_FIELDS); },
+    clearAll:function(){ Store.remove(INPUT_DRAFT_KEY); updateInputDraftStatus(); }
+  };
+})();
+
+/* 応援 */
+$("cheerBtn").addEventListener("click",rollCheer);
+
+/* 和カフェモード */
+$("cafeSwitch").addEventListener("change",function(){
+  document.body.classList.toggle("cafe",this.checked);
+  Store.set("usausa_cafe",this.checked);
+});
+if(Store.get("usausa_cafe",false)){ $("cafeSwitch").checked=true; document.body.classList.add("cafe"); }
+
+/* 手帖：全選択 / 解除 */
+$("pickAll").addEventListener("change",function(){
+  var on=this.checked;
+  document.querySelectorAll("#notes .note").forEach(function(el){
+    var p=el.querySelector(".pick"); if(p){ p.checked=on; el.classList.toggle("sel",on); }
+  });
+  updatePickState();
+});
+
+/* 手帖：選択した分だけ外す */
+$("bulkDelBtn").addEventListener("click",function(){
+  var ids=Array.prototype.map.call(
+    document.querySelectorAll("#notes .pick:checked"),
+    function(p){ return Number(p.getAttribute("data-id")); }
+  );
+  if(!ids.length) return;
+  Modal.confirm("選択した "+ids.length+" 枚の手帖を外します。よろしいですか？\n（この操作は元に戻せません）","外す").then(function(ok){
+    if(!ok) return;
+    state.notes=state.notes.filter(function(n){ return ids.indexOf(n.id)===-1; });
+    save(); renderNotes();
+    toast(ids.length+" 枚の手帖を外しました");
+  });
+});
+
+/* 自動消去モード（一週間） */
+$("autoEraseSwitch").checked=autoEraseOn;
+$("autoEraseSwitch").addEventListener("change",function(){
+  var sw=this;
+  if(sw.checked){
+    Modal.confirm("自動消去モードをONにします。\nこれ以降、作成から"+NOTE_TTL_DAYS+"日を過ぎた手帖は起動時に自動で外れます。\nよろしいですか？","ONにする").then(function(ok){
+      if(!ok){ sw.checked=false; return; }
+      autoEraseOn=true; Store.set(AUTOERASE_KEY,true);
+      var removed=sweepOldNotes(); renderNotes();
+      toast(removed>0 ? removed+" 枚の古い手帖を外しました（自動消去ON）" : "自動消去モードをONにしました（7日経過分を自動で外します）");
+    });
+  } else {
+    autoEraseOn=false; Store.set(AUTOERASE_KEY,false);
+    toast("自動消去モードをOFFにしました");
+  }
+});
+
+/* リセット */
+$("resetBtn").addEventListener("click",function(){
+  Modal.confirm("これまでの記録（和菓子・継続・手帖・読書週間）をすべて消します。よろしいですか？","すべて消す").then(function(ok){
+    if(!ok) return;
+    state={wagashi:0,notes:[],morningDate:null,readDate:null,weekStart:weekKey(),weekDone:[false,false,false,false,false,false,false],weekBare:false,streak:0,lastDay:null};
+    save(); renderAll();
+    if(typeof InputDraft!=="undefined"){
+      INPUT_FIELDS.forEach(function(id){ var el=$(id); if(el){ el.value=(id==="goalUnit")?"ページ":""; } });
+      InputDraft.clearAll();
+    }
+    toast("記録をまっさらにしました 🌱");
+  });
+});
+
+/* ============ 一時保存（自動保存 + 手動保存 強化版）============ */
+var DRAFT_KEY="usausa_techo_draft_v1";
+var AUTO_KEY ="usausa_techo_auto_v1";
+
+/* ---------- 自動保存 ---------- */
+function autoSave(){
+  var draft=JSON.parse(JSON.stringify(state));
+  var now=new Date(); var pad=function(n){return String(n).padStart(2,"0");};
+  draft._savedAt=now.getFullYear()+"/"+pad(now.getMonth()+1)+"/"+pad(now.getDate())
+    +" "+pad(now.getHours())+":"+pad(now.getMinutes())+":"+pad(now.getSeconds());
+  draft._auto=true;
+  Store.set(AUTO_KEY,draft);
+  updateDraftStatus();
+}
+setInterval(autoSave,30000);
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="hidden") autoSave();
+});
+window.addEventListener("beforeunload",function(){ autoSave(); });
+var _debounceTimer=null;
+function triggerAutoSave(){ clearTimeout(_debounceTimer); _debounceTimer=setTimeout(autoSave,5000); }
+var _origSave=save;
+save=function(){ _origSave(); triggerAutoSave(); };
+
+/* ---------- ステータス表示 ---------- */
+function updateDraftStatus(){
+  var auto=Store.get(AUTO_KEY,null);
+  var man =Store.get(DRAFT_KEY,null);
+  var btn=$("loadDraftBtn"); var st=$("draftStatus");
+  var parts=[];
+  if(auto && auto._savedAt) parts.push("\uD83D\uDD04 自動："+auto._savedAt);
+  if(man  && man._savedAt)  parts.push("\uD83D\uDCBE 手動："+man._savedAt+(man._memo?" ["+man._memo+"]":""));
+  st.textContent = parts.length ? parts.join("　　") : "";
+  btn.disabled = !(auto || man);
+}
+
+/* ---------- 手動保存（メモ付き）---------- */
+$("saveDraftBtn").addEventListener("click",function(){
+  Modal.prompt("この一時保存にメモを付けますか？（空欄でもOK）","").then(function(memo){
+    if(memo===null) return;
+    var draft=JSON.parse(JSON.stringify(state));
+    var now=new Date(); var pad=function(n){return String(n).padStart(2,"0");};
+    draft._savedAt=now.getFullYear()+"/"+pad(now.getMonth()+1)+"/"+pad(now.getDate())
+      +" "+pad(now.getHours())+":"+pad(now.getMinutes());
+    draft._memo=memo||""; draft._auto=false;
+    Store.set(DRAFT_KEY,draft);
+    updateDraftStatus();
+    toast("一時保存しました \uD83D\uDCBE  "+draft._savedAt+(memo?" ["+memo+"]":""));
+  });
+});
+
+/* ---------- 復元（手動 or 自動を選択）---------- */
+$("loadDraftBtn").addEventListener("click",function(){
+  var man =Store.get(DRAFT_KEY,null);
+  var auto=Store.get(AUTO_KEY,null);
+  var choices=[]; var srcs=[];
+  if(man  && man._savedAt)  { choices.push("\uD83D\uDCBE 手動保存  "+man._savedAt+(man._memo?" ["+man._memo+"]":"")); srcs.push(man); }
+  if(auto && auto._savedAt) { choices.push("\uD83D\uDD04 自動保存  "+auto._savedAt); srcs.push(auto); }
+  if(!choices.length){ toast("保存データがありません"); return; }
+
+  function doRestore(idx){
+    if(isNaN(idx)||idx<0||idx>=srcs.length){ toast("無効な選択です"); return; }
+    var src=srcs[idx];
+    Modal.confirm("復元します。現在の記録は上書きされます。\n"+(src._memo||src._savedAt),"復元する").then(function(ok){
+      if(!ok) return;
+      var tmp=JSON.parse(JSON.stringify(src));
+      delete tmp._savedAt; delete tmp._memo; delete tmp._auto;
+      state=tmp; save(); renderAll();
+      toast("復元しました \uD83D\uDCC2  "+src._savedAt);
+    });
+  }
+
+  if(choices.length===1){ doRestore(0); return; }
+  var msg="復元するデータを選んでください：\n\n";
+  choices.forEach(function(c,i){ msg+=(i+1)+". "+c+"\n"; });
+  msg+="\n番号を入力（1\u301c"+choices.length+"）";
+  Modal.prompt(msg,"1").then(function(ans){
+    if(!ans) return;
+    doRestore(parseInt(ans,10)-1);
+  });
+});
+
+/* 起動時にステータス反映 */
+updateDraftStatus();
+
+/* ============ Markdownダウンロード ============ */
+$("mdDownBtn").addEventListener("click",function(){
+  var now=new Date();
+  var pad=function(n){return String(n).padStart(2,"0");};
+  var dateStr=now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate());
+  var timeStr=pad(now.getHours())+":"+pad(now.getMinutes());
+
+  var dayNames=["日","月","火","水","木","金","土"];
+  var weekBare=!!state.weekBare;
+  var weekLines=state.weekDone.map(function(d,i){return (d?"🌸":(weekBare?"·":"🪷"))+" "+dayNames[i];}).join("　");
+
+  var lines=[];
+  lines.push("# うさうさ読書手帖 ── 記録エクスポート");
+  lines.push("");
+  lines.push("出力日時：" + dateStr + " " + timeStr);
+  lines.push("称号：**" + rankOf(state.wagashi) + "**　｜　和菓子：" + state.wagashi + " 個　｜　継続：" + state.streak + " 日");
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  lines.push("## 今週の読書週間");
+  lines.push("");
+  lines.push(weekLines);
+  lines.push("");
+  lines.push("読書日：" + state.weekDone.filter(Boolean).length + "/7 日");
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+  lines.push("## 学びの手帖（" + state.notes.length + "枚）");
+  lines.push("");
+  if(state.notes.length===0){
+    lines.push("（まだ記録がありません）");
+  } else {
+    state.notes.forEach(function(n,i){
+      lines.push("### " + (i+1) + ". " + (n.title||"（無題）"));
+      lines.push("");
+      lines.push("*" + n.date + "*");
+      lines.push("");
+      if(n.def)    { lines.push("**① 定義**"); lines.push(""); lines.push(n.def); lines.push(""); }
+      if(n.meta)   { lines.push("**② たとえ**"); lines.push(""); lines.push(n.meta); lines.push(""); }
+      if(n.detail) { lines.push("**③ 詳細**"); lines.push(""); lines.push(n.detail); lines.push(""); }
+      if(n.sum)    { lines.push("**④ 一言まとめ**"); lines.push(""); lines.push(n.sum); lines.push(""); }
+      lines.push("---");
+      lines.push("");
+    });
+  }
+  lines.push("");
+  lines.push("> 🐰 うさうさ研修工房");
+
+  var md=lines.join("\n");
+  var blob=new Blob([md],{type:"text/markdown;charset=utf-8"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url; a.download="usausa_techo_"+dateStr+".md";
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  toast("Markdownをダウンロードしました 📄");
+});
+
+/* 初期化時にドラフトステータスを反映 */
+updateDraftStatus();
+
+/* 桜の花びら生成 */
+(function makePetals(){
+  var c=$("petals"); var N=14;
+  for(var i=0;i<N;i++){
+    var p=document.createElement("div"); p.className="petal";
+    p.style.left=(Math.random()*100)+"%";
+    p.style.animationDuration=(8+Math.random()*9)+"s";
+    p.style.animationDelay=(-Math.random()*12)+"s";
+    var s=8+Math.random()*9; p.style.width=s+"px"; p.style.height=s+"px";
+    p.style.opacity=String(.5+Math.random()*.4);
+    c.appendChild(p);
+  }
+})();
+
+/* 初期描画 */
+function renderAll(){ renderHeader(); renderWeek(); renderMorning(); renderTray(); renderNotes(); }
+var _sweptOnLoad=sweepOldNotes();
+rollCheer(); renderAll();
+if(_sweptOnLoad>0){ toast(_sweptOnLoad+" 枚の古い手帖を自動で外しました（"+NOTE_TTL_DAYS+"日経過）"); }
+window.addEventListener("resize",function(){ renderTray(); });
+
+/* ============ エラーログ：ボタン操作 ============ */
+$("errlogToggleBtn").addEventListener("click",function(){
+  var p=$("errlog"); p.classList.toggle("show"); Logger.render();
+  if(p.classList.contains("show")) p.scrollIntoView({behavior:"smooth",block:"start"});
+});
+function copyLogFallback(txt){
+  try{
+    var ta=document.createElement("textarea");
+    ta.value=txt; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta);
+    toast("ログをコピーしました 📋");
+  }catch(e){ Logger.error("errlog.copy", e); toast("コピーに失敗しました"); }
+}
+$("errlogCopyBtn").addEventListener("click",function(){
+  var txt=Logger.entries().map(function(e){ return e.t+"  ["+e.lv+"] "+e.c+": "+e.m; }).join("\n") || "(ログなし)";
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ toast("ログをコピーしました 📋"); }, function(){ copyLogFallback(txt); });
+  } else { copyLogFallback(txt); }
+});
+$("errlogClearBtn").addEventListener("click",function(){
+  Logger.clear(); toast("エラーログを消しました");
+});
+$("errlogTestBtn").addEventListener("click",function(){
+  try{ throw new Error("これはテスト用の疑似エラーです（動作確認）"); }
+  catch(e){ Logger.error("動作テスト", e); }
+  toast("疑似エラーを記録しました 🧪");
+});
+
+/* ============ 書きかけ入力：初期化（バインド＋復元）============ */
+try{
+  InputDraft.bind();
+  var _restored=InputDraft.restore();
+  updateInputDraftStatus();
+  if(_restored>0){ toast("書きかけの入力を復元しました ✍️（"+_restored+"項目）"); }
+}catch(e){ Logger.error("InputDraft.init", e); }
+
+/* 起動時にログ表示を反映（過去のエラーがあれば自動で開く）*/
+try{ Logger.render(); }catch(e){}
+
+</script>
+</body>
+</html>
